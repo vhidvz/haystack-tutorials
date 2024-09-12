@@ -48,9 +48,8 @@ template = """
 prompt_builder = PromptBuilder(template=template)
 
 
-# text2text-generation: google/mt5-large, google/flan-t5-large
 generator = HuggingFaceLocalGenerator(
-    model="google/mt5-large",
+    model="google/flan-t5-large",
     task="text2text-generation",
     generation_kwargs={"max_new_tokens": 100})
 generator.warm_up()
@@ -73,4 +72,4 @@ basic_rag_pipeline.connect("prompt_builder", "llm")
 question = "پایتخت ایران کجاست؟"
 response = basic_rag_pipeline.run(
     {"text_embedder": {"text": question}, "prompt_builder": {"question": question}})
-print(response["llm"]["replies"][0])
+print('Answer:', response["llm"]["replies"][0])
