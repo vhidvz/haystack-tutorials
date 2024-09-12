@@ -5,51 +5,54 @@ from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.embedders import SentenceTransformersTextEmbedder
 from haystack.components.embedders import SentenceTransformersDocumentEmbedder
 from haystack import Document
-from datasets import load_dataset
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 document_store = InMemoryDocumentStore()
 
 
-dataset = load_dataset("bilgeyucel/seven-wonders", split="train")
-docs = [Document(content=doc["content"], meta=doc["meta"]) for doc in dataset]
-
+docs = [
+    Document(content="تهران پایتخت ایران است."),
+    Document(content="اصفهان یکی از شهرهای تاریخی ایران است."),
+    Document(content="زبان رسمی ایران فارسی است."),
+    Document(content="ایران دارای تاریخ و فرهنگ غنی است.")
+]
 
 doc_embedder = SentenceTransformersDocumentEmbedder(
-    model="sentence-transformers/all-MiniLM-L6-v2")
+    model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
 doc_embedder.warm_up()
+
 
 docs_with_embeddings = doc_embedder.run(docs)
 document_store.write_documents(docs_with_embeddings["documents"])
 
 
 text_embedder = SentenceTransformersTextEmbedder(
-    model="sentence-transformers/all-MiniLM-L6-v2")
+    model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
+text_embedder.warm_up()
 
 
-retriever = InMemoryEmbeddingRetriever(document_store)
+retriever = InMemoryEmbeddingRetriever(document_store, top_k=1)
 
 
 template = """
-Given the following information, answer the question.
+بر مبنای اطلاعات ارائه شده در ادامه به سوال پاسخ بده.
 
-Context:
+اطلاعات:
 {% for document in documents %}
     {{ document.content }}
 {% endfor %}
 
-Question: {{question}}
-Answer:
+سوال: {{question}}
+پاسخ:
 """
-
 prompt_builder = PromptBuilder(template=template)
 
 
+# text2text-generation: google/mt5-large, google/flan-t5-large
 generator = HuggingFaceLocalGenerator(
-    model="google/flan-t5-large",
+    model="google/mt5-large",
     task="text2text-generation",
-    generation_kwargs={"max_new_tokens": 100, "temperature": 0.9})
-
+    generation_kwargs={"max_new_tokens": 100})
 generator.warm_up()
 
 
@@ -67,9 +70,7 @@ basic_rag_pipeline.connect("retriever", "prompt_builder.documents")
 basic_rag_pipeline.connect("prompt_builder", "llm")
 
 
-question = "What does Rhodes Statue look like?"
-
+question = "پایتخت ایران کجاست؟"
 response = basic_rag_pipeline.run(
     {"text_embedder": {"text": question}, "prompt_builder": {"question": question}})
-
 print(response["llm"]["replies"][0])
