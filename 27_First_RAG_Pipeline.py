@@ -43,7 +43,7 @@ template = """
 {% endfor %}
 
 سوال: {{question}}
-پاسخ:
+پاسخ: 
 """
 prompt_builder = PromptBuilder(template=template)
 
