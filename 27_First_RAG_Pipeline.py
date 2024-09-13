@@ -11,7 +11,8 @@ document_store = InMemoryDocumentStore()
 
 
 docs = [
-    Document(content="تهران پایتخت ایران است."),
+    Document(
+        content="ایران یک کشور چهار فصل و دارای فرهنگی غنی است که پایتخت آن تهران است."),
     Document(content="اصفهان یکی از شهرهای تاریخی ایران است."),
     Document(content="زبان رسمی ایران فارسی است."),
     Document(content="ایران دارای تاریخ و فرهنگ غنی است.")
@@ -31,7 +32,7 @@ text_embedder = SentenceTransformersTextEmbedder(
 text_embedder.warm_up()
 
 
-retriever = InMemoryEmbeddingRetriever(document_store, top_k=1)
+retriever = InMemoryEmbeddingRetriever(document_store, top_k=3)
 
 
 template = """
@@ -43,14 +44,15 @@ template = """
 {% endfor %}
 
 سوال: {{question}}
-پاسخ: 
+پاسخ:
 """
 prompt_builder = PromptBuilder(template=template)
 
 
 generator = HuggingFaceLocalGenerator(
     model="m3hrdadfi/gpt2-persian-qa",
-    task="text2text-generation")
+    task="text2text-generation",
+    generation_kwargs={"max_new_tokens": 100})
 generator.warm_up()
 
 
