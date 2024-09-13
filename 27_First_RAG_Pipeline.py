@@ -49,8 +49,8 @@ prompt_builder = PromptBuilder(template=template)
 
 
 generator = HuggingFaceLocalGenerator(
-    model="universitytehran/PersianMind-v1.0",
-    task="text-generation",
+    model="google/flan-t5-large",
+    task="text2text-generation",
     generation_kwargs={"max_new_tokens": 100})
 generator.warm_up()
 
@@ -73,7 +73,7 @@ question = "پایتخت ایران کجاست؟"
 
 retrieve_doc = text_embedder.run(question)['embedding']
 retriever_test = retriever.run(retrieve_doc)
-print("Doc:", retriever_test[0]["content"])
+print("Doc:", retriever_test['documents'])
 
 response = basic_rag_pipeline.run(
     {"text_embedder": {"text": question}, "prompt_builder": {"question": question}})
