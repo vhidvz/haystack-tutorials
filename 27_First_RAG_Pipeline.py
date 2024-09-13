@@ -49,9 +49,8 @@ prompt_builder = PromptBuilder(template=template)
 
 
 generator = HuggingFaceLocalGenerator(
-    model="google/flan-t5-large",
-    task="text2text-generation",
-    generation_kwargs={"max_new_tokens": 100})
+    model="m3hrdadfi/gpt2-persian-qa",
+    task="text2text-generation")
 generator.warm_up()
 
 
