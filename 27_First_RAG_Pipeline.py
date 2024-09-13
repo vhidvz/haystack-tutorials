@@ -6,6 +6,8 @@ from haystack.components.embedders import SentenceTransformersTextEmbedder
 from haystack.components.embedders import SentenceTransformersDocumentEmbedder
 from haystack import Document
 from haystack.document_stores.in_memory import InMemoryDocumentStore
+from haystack.components.preprocessors.document_splitter import DocumentSplitter
+from haystack.components.writers import DocumentWriter
 
 document_store = InMemoryDocumentStore()
 
@@ -18,13 +20,22 @@ docs = [
     Document(content="ایران دارای تاریخ و فرهنگ غنی است.")
 ]
 
+doc_splitter = DocumentSplitter(
+    split_by="word", split_length=512, split_overlap=32)
 doc_embedder = SentenceTransformersDocumentEmbedder(
     model="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
-doc_embedder.warm_up()
 
+doc_writer = DocumentWriter(document_store)
 
-docs_with_embeddings = doc_embedder.run(docs)
-document_store.write_documents(docs_with_embeddings["documents"])
+indexing_pipeline = Pipeline()
+indexing_pipeline.add_component("doc_splitter", doc_splitter)
+indexing_pipeline.add_component("doc_embedder", doc_embedder)
+indexing_pipeline.add_component("doc_writer", doc_writer)
+
+indexing_pipeline.connect("doc_splitter", "doc_embedder")
+indexing_pipeline.connect("doc_embedder", "doc_writer")
+
+indexing_pipeline.run({"doc_splitter": {"documents": docs}})
 
 
 text_embedder = SentenceTransformersTextEmbedder(
@@ -32,7 +43,7 @@ text_embedder = SentenceTransformersTextEmbedder(
 text_embedder.warm_up()
 
 
-retriever = InMemoryEmbeddingRetriever(document_store, top_k=3)
+retriever = InMemoryEmbeddingRetriever(document_store)
 
 
 template = """
@@ -77,5 +88,9 @@ retriever_test = retriever.run(retrieve_doc)
 print("Doc:", retriever_test['documents'])
 
 response = basic_rag_pipeline.run(
-    {"text_embedder": {"text": question}, "prompt_builder": {"question": question}})
+    {
+        "retriever": {"top_k": 3},
+        "text_embedder": {"text": question},
+        "prompt_builder": {"question": question}
+    })
 print('Answer:', response["llm"]["replies"][0])
